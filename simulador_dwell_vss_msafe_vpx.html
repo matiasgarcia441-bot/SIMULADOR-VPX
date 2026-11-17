@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DIGITO dWELL – Simulador VSS, mSafe y VPX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --yellow:#FFC20E; --graphite:#2B2B2B;
+  --teal:#128A8C; --teal-d:#0A5D5F; --teal-l:#1FB3B5;
+  --steel:#B8C3C8; --steel-d:#7E8A90;
+  --oil:#E3A21A; --fluid:#3E6E8E; --red:#FF2D2D; --blue:#4EA3FF; --green:#38D46B;
+  --lcd:#2A4C97; --lcd-t:#F3F6FF;
+}
+[data-theme="dark"]{
+  --bg:#000000; --panel:#121314; --panel2:#1A1C1E; --line:#2C2F32; --text:#F1F2F3; --muted:#959CA1;
+  --vpx:#2A2B2C; --vpx-in:#121212; --cab:#C9CDCF; --cab-d:#9EA4A7; --act-in:#0D3B3C; --cav:#08292A;
+}
+[data-theme="light"]{
+  --bg:#E8EAEB; --panel:#FFFFFF; --panel2:#F2F4F5; --line:#D2D6D8; --text:#161718; --muted:#5D6468;
+  --vpx:#333435; --vpx-in:#1B1B1B; --cab:#D9DCDE; --cab-d:#AEB4B7; --act-in:#CFE7E7; --cav:#A9CFCF;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:"Barlow",system-ui,sans-serif;font-size:14px;line-height:1.4}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+h2{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:18px;margin:0 0 8px;letter-spacing:.2px}
+h3{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:15px;margin:12px 0 6px;color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+
+/* Header */
+.top{display:flex;align-items:center;gap:20px;padding:12px 18px;border-bottom:3px solid var(--yellow);background:var(--panel);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.logo-mark{width:44px;height:44px}
+.wm{font-family:"Barlow",sans-serif;font-weight:700;font-size:30px;letter-spacing:3px;line-height:1}
+.wm .i{background:linear-gradient(var(--yellow) 0 30%,var(--text) 30%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.tag{font-size:12px;color:var(--muted)}
+.ttl{flex:1;min-width:240px}
+.ttl h1{font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:26px;margin:0;line-height:1.05}
+.ttl p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.hctl{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.clock{font-family:"Share Tech Mono",monospace;font-size:20px;padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel2)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{background:var(--panel2);border:0;padding:6px 10px;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--yellow);color:#111;font-weight:700}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:6px 12px}
+.btn:hover{border-color:var(--yellow)}
+.btn.y{background:var(--yellow);color:#111;border-color:var(--yellow);font-weight:700}
+
+/* Layout */
+.app{display:grid;grid-template-columns:300px minmax(600px,1fr) 300px;gap:14px;padding:14px;align-items:start}
+.pnl{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.stage{display:grid;grid-template-columns:232px 1fr;gap:12px;padding:12px}
+.bottom{grid-column:1/-1;display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:14px}
+@media (max-width:1320px){.app{grid-template-columns:290px 1fr}.vpxp{grid-column:1/-1}.bottom{grid-template-columns:1fr 1fr}}
+@media (max-width:900px){.app{grid-template-columns:1fr}.stage{grid-template-columns:1fr}.bottom{grid-template-columns:1fr}}
+
+/* Controls */
+.ctl .row{display:grid;grid-template-columns:1fr 74px;gap:6px;align-items:center;margin:6px 0}
+.ctl label{font-size:13px}
+.ctl .sub{font-size:11.5px;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--yellow)}
+input[type=number]{width:74px;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:5px;padding:3px 5px;font:inherit;font-variant-numeric:tabular-nums}
+.chk{display:flex;gap:8px;align-items:flex-start;margin:5px 0;font-size:13px}
+.chk input{accent-color:var(--yellow);margin-top:3px}
+.grp{border-top:1px solid var(--line);margin-top:10px;padding-top:4px}
+.scn{display:flex;flex-wrap:wrap;gap:6px}
+.scn .btn{font-size:12.5px;padding:5px 8px}
+
+/* mSafe cabinet */
+.cab{background:var(--cab);border-radius:6px;padding:12px;color:#1b1b1b;border:1px solid var(--cab-d);box-shadow:inset 0 0 0 4px rgba(255,255,255,.18)}
+.cab-head{display:flex;justify-content:space-between;align-items:baseline;font-family:"Barlow Condensed";font-weight:700;font-size:18px}
+.cab-head small{font-weight:500;font-size:12px;color:#444}
+.lcd{background:var(--lcd);color:var(--lcd-t);font-family:"Share Tech Mono",monospace;font-size:13.5px;line-height:1.35;padding:8px 9px;border-radius:3px;margin:8px 0;white-space:pre;min-height:84px;border:3px solid #1a1a1a}
+.keys{display:flex;gap:6px;justify-content:center;margin-bottom:8px}
+.keys button{background:#3a3d40;color:#fff;border:0;border-radius:4px;padding:3px 12px}
+.opb{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.opb button{background:#2f3235;color:#fff;border:0;border-radius:4px;padding:7px 4px;font-size:12.5px;font-weight:600}
+.opb button.go{background:var(--teal)}
+.opb button.st{background:#6a6f73}
+.opb button.wide{grid-column:1/-1}
+.opb button:hover{filter:brightness(1.15)}
+.ovr{display:flex;align-items:center;gap:6px;font-size:12px;margin-top:6px}
+.ovr input{width:52px;background:#fff;color:#111;border:1px solid #888}
+.esdw{display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:10px;border-top:1px solid var(--cab-d)}
+.esd{width:58px;height:58px;border-radius:50%;border:5px solid var(--yellow);background:radial-gradient(circle at 35% 35%,#ff6b6b,#c40000 70%);color:#fff;font-weight:800;font-size:11px;box-shadow:0 3px 0 #7a0000}
+.esd[aria-pressed="true"]{transform:translateY(3px);box-shadow:none;background:radial-gradient(circle at 35% 35%,#d24a4a,#8f0000 70%)}
+.esdl{font-size:12px;line-height:1.25}
+.msg{min-height:34px;font-size:12px;margin-top:8px;color:#5a1d00;background:rgba(255,194,14,.35);border-radius:4px;padding:4px 6px;display:none}
+.msg.on{display:block}
+.pumpline{display:flex;justify-content:space-between;font-size:12px;margin-top:8px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#555;vertical-align:middle;margin-right:4px}
+.dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+
+/* stage */
+.svgw{position:relative}
+#valve{width:100%;height:auto;max-height:860px;display:block}
+.ro{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.ro div{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:6px 8px}
+.ro b{display:block;font-family:"Barlow Condensed";font-size:21px;font-weight:700;font-variant-numeric:tabular-nums}
+.ro span{font-size:12px;color:var(--muted)}
+
+/* SVG */
+.lbl{font-family:"Barlow Condensed";font-size:13px;fill:var(--text)}
+.lbl-m{font-family:"Barlow Condensed";font-size:12px;fill:var(--muted)}
+.vpx-body{fill:var(--vpx);stroke:#000;stroke-width:1}
+.vpx-in{fill:var(--vpx-in)}
+.pcb{fill:#1f6b3a}
+.act-in{fill:var(--act-in)}
+.teal{fill:var(--teal)}
+.teal-d{fill:var(--teal-d)}
+.steel{fill:var(--steel);stroke:var(--steel-d);stroke-width:1}
+.cav{fill:var(--cav)}
+.fluid{fill:var(--fluid)}
+.oil{fill:var(--oil)}
+.spr{fill:#d9dde0;stroke:#6f777c;stroke-width:1}
+.tube{stroke:var(--steel-d);stroke-width:7;fill:none}
+.tubeflow{stroke:var(--oil);stroke-width:3;fill:none;stroke-dasharray:6 8}
+.flow{stroke:#9FD4FF;stroke-width:4;fill:none;stroke-dasharray:10 12}
+.sled{fill:#3a1010}
+.sled.on{fill:var(--red);filter:drop-shadow(0 0 3px var(--red))}
+.arrow-h{stroke:var(--oil);fill:var(--oil)}
+.arrow-s{stroke:var(--yellow);fill:var(--yellow)}
+
+/* VPX panel */
+.vpxp .code{font-size:12px;color:var(--muted)}
+.sw100{display:flex;gap:8px;align-items:center;margin:6px 0 4px}
+.tg{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:12.5px}
+.knob{width:30px;height:14px;border-radius:3px;background:#5c4630;position:relative}
+.knob::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:10px;background:#f2f2f2;border-radius:2px;transition:left .12s}
+.on>.knob::after{left:16px}
+.mode-l{font-weight:700;font-size:13px}
+.mode-l.err{color:var(--red)}
+.leds2{display:flex;gap:14px;font-size:12px;margin:6px 0}
+.pl{display:inline-block;width:10px;height:10px;border-radius:50%;background:#3a1010;vertical-align:middle;margin-right:4px}
+.pl.on{background:var(--red);box-shadow:0 0 6px var(--red)}
+.board{background:#0f3d22;border-radius:6px;padding:6px 8px;margin-top:8px;position:relative}
+.board.locked .dip{opacity:.45;cursor:not-allowed}
+.gh{font-family:"Barlow Condensed";color:#FFC20E;font-size:12.5px;margin:4px 0 2px}
+.br{display:grid;grid-template-columns:34px 22px 1fr 16px;align-items:center;gap:6px;height:14px}
+.dip{width:30px;height:11px;border:0;border-radius:2px;background:#5c4630;position:relative;padding:0}
+.dip::after{content:"";position:absolute;top:1.5px;left:16px;width:12px;height:8px;background:#f2f2f2;border-radius:1px}
+.dip.off::after{left:2px}
+.reed{width:20px;height:10px;border:1px solid #6d8f7a;border-radius:5px;background:linear-gradient(90deg,transparent 30%,#c9d6cf 30% 70%,transparent 70%);padding:0}
+.reed.dead{background:#222;border-color:#888}
+.reed.stuck{background:#c9a400;border-color:#ffe168}
+.rn{font-size:11px;color:#cfe3d7;font-variant-numeric:tabular-nums}
+.bled{width:9px;height:9px;border-radius:50%;background:#3b1010}
+.bled.on{background:var(--red);box-shadow:0 0 6px var(--red)}
+.cut{height:0;border-top:2px dashed var(--yellow);margin:1px 0 1px 0}
+.outs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.outs div{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:5px 7px;font-size:12px}
+.outs b{font-family:"Barlow Condensed";font-size:17px}
+.cal{margin-top:10px;font-size:12.5px}
+.cal ol{padding-left:18px;margin:4px 0}
+.cal li{margin:3px 0}
+.ok{color:var(--green);font-weight:700}
+.no{color:var(--muted)}
+.hint{font-size:12px;color:var(--muted);margin-top:6px}
+
+/* bottom */
+canvas{width:100%;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:4px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+td{padding:3px 4px;border-bottom:1px solid var(--line)}
+td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.warn{color:var(--yellow)}
+.alarm{color:var(--red)}
+.log{max-height:230px;overflow:auto;font-size:12.5px}
+.log div{padding:2px 0;border-bottom:1px solid var(--line)}
+.log .t{font-family:"Share Tech Mono",monospace;color:var(--muted);margin-right:6px}
+.foot{padding:0 14px 18px;color:var(--muted);font-size:12px}
+@media (prefers-reduced-motion:reduce){.esd{transition:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg class="logo-mark" viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M24 3a21 21 0 1 1 0 42H3V24A21 21 0 0 1 24 3z" fill="#FFC20E"/>
+      <circle cx="24" cy="24" r="13" fill="#2B2B2B"/>
+      <path d="M24 15a9 9 0 1 0 9 9a7 7 0 0 1-9-9z" fill="#fff"/>
+    </svg>
+    <div>
+      <div class="wm">DIG<span class="i">I</span>TO</div>
+      <div class="tag">dWELL | Digitalización de Boca de Pozo</div>
+    </div>
+  </div>
+  <div class="ttl">
+    <h1>Simulador VSS + mSafe + VPX-dWELL</h1>
+    <p>VSS 2-9/16" 5M con actuador H5 (pistón Ø127 mm, vástago Ø31,7 mm, carrera 77 mm), tubing 3/8" de 10 m</p>
+  </div>
+  <div class="hctl">
+    <span class="clock num" id="clock">00:00</span>
+    <div class="seg" id="speed" aria-label="Velocidad de simulación">
+      <button data-s="1" aria-pressed="true">1×</button><button data-s="2">2×</button><button data-s="5">5×</button><button data-s="10">10×</button><button data-s="20">20×</button>
+    </div>
+    <button class="btn" id="pause">Pausar</button>
+    <button class="btn" id="reset">Reiniciar</button>
+    <button class="btn" id="theme">Modo claro</button>
+  </div>
+</header>
+
+<main class="app">
+  <!-- CONTROLS -->
+  <aside class="pnl ctl">
+    <h2>Proceso</h2>
+    <div class="row"><label for="pc">Presión de cabeza (PC), psi</label><input type="number" id="pcN"></div>
+    <input type="range" id="pc" min="0" max="6000" step="10">
+    <div class="row"><label for="pl">Presión de línea (PL), psi</label><input type="number" id="plN"></div>
+    <input type="range" id="pl" min="0" max="6000" step="10">
+    <div class="sub">La PL actúa sobre el área del vástago y suma fuerza al cierre. La diferencia PC − PL aprieta la esclusa contra el asiento al abrir.</div>
+    <div class="row"><label>Trigger PL bajo / alto</label><span></span></div>
+    <div style="display:flex;gap:8px"><input type="number" id="plLo"><input type="number" id="plHi"></div>
+    <label class="chk"><input type="checkbox" id="trig" checked>Triggers de PL habilitados</label>
+
+    <div class="grp"><h2>Hidráulica del mSafe</h2>
+    <div class="row"><label for="poff">Presión de actuador (PUMP OFF), psi</label><input type="number" id="poffN"></div>
+    <input type="range" id="poff" min="300" max="3000" step="10">
+    <div class="row"><label for="pon">PUMP ON (compensación), psi</label><input type="number" id="ponN"></div>
+    <input type="range" id="pon" min="200" max="2200" step="10">
+    <div class="row"><label for="qp">Caudal de bomba, L/min</label><input type="number" id="qpN" step="0.1"></div>
+    <input type="range" id="qp" min="0.5" max="4" step="0.1">
+    <div class="row"><label for="tl">Largo de tubing, m</label><input type="number" id="tlN"></div>
+    <input type="range" id="tl" min="2" max="30" step="1">
+    <label class="chk"><input type="checkbox" id="quick">Escape rápido junto al actuador (retorno 1/2")</label>
+    </div>
+
+    <div class="grp"><h2>Posición a demanda</h2>
+    <label class="chk"><input type="checkbox" id="manual">Mover la válvula a mano (congela la hidráulica)</label>
+    <div class="row"><label for="manx">Apertura, %</label><input type="number" id="manxN"></div>
+    <input type="range" id="manx" min="0" max="100" step="1">
+    </div>
+
+    <div class="grp"><h2>VPX y entrada del mSafe</h2>
+    <div class="seg" id="vmode" style="margin:4px 0">
+      <button data-m="digital" aria-pressed="true">Digital</button><button data-m="analog">Analógico 4-20 mA</button>
+    </div>
+    <div class="sub">Cambia el DIP principal SW100 del VPX y el tipo de entrada del mSafe.</div>
+    <label class="chk"><input type="checkbox" id="hasvpx" checked>VPX instalado (si no, el mSafe infiere la posición)</label>
+    <label class="chk"><input type="checkbox" id="inv">Invertir estado (4 mA = cerrada)</label>
+    <label class="chk"><input type="checkbox" id="vpow" checked>Alimentación 24 VDC del VPX</label>
+    <div class="row"><label for="gap">Distancia imán–placa, mm</label><input type="number" id="gapN" step="0.1"></div>
+    <input type="range" id="gap" min="0.5" max="6" step="0.1">
+    <label class="chk"><input type="checkbox" id="nomag4">Supuesto: sin imán la placa entrega 4 mA</label>
+    </div>
+
+    <div class="grp"><h2>Fallas</h2>
+    <label class="chk"><input type="checkbox" data-f="packing">Empaquetadura agarrotada (fricción ×5)</label>
+    <label class="chk"><input type="checkbox" data-f="spring">Resorte vencido (−45% de fuerza)</label>
+    <label class="chk"><input type="checkbox" data-f="stuck">Válvula trabada o tapa de bloqueo puesta</label>
+    <label class="chk"><input type="checkbox" data-f="sand">Arenado: no completa el cierre</label>
+    <label class="chk"><input type="checkbox" data-f="leak">Fuga hidráulica en el actuador</label>
+    <label class="chk"><input type="checkbox" data-f="decoupled">Vástago desacoplado de la esclusa</label>
+    <label class="chk"><input type="checkbox" data-f="magnet">Imán del VPX despegado</label>
+    <label class="chk"><input type="checkbox" data-f="loose">Cuerpo del VPX desenroscado (+2 reeds)</label>
+    <div class="sub">Reed abierto o pegado: hacé clic en el reed dentro de la placa del VPX.</div>
+    </div>
+
+    <div class="grp"><h2>Escenarios</h2>
+    <div class="scn">
+      <button class="btn" data-sc="low">Pozo de baja presión</button>
+      <button class="btn" data-sc="high">Gas a 4800 psi</button>
+      <button class="btn" data-sc="start">Puesta en marcha con PL baja</button>
+      <button class="btn" data-sc="ramp">Subida de PL hasta el trigger</button>
+      <button class="btn" data-sc="factory">VPX sin calibrar</button>
+    </div></div>
+  </aside>
+
+  <!-- STAGE -->
+  <section class="pnl stage">
+    <div class="cab">
+      <div class="cab-head">mSafe <small>FW 2.05, TAG PAD 05</small></div>
+      <div class="lcd" id="lcd" aria-live="polite"></div>
+      <div class="keys"><button id="kp" aria-label="Pantalla anterior">◄</button><button id="kn" aria-label="Pantalla siguiente">►</button></div>
+      <div class="opb">
+        <button class="go" id="bOpen">Abrir V. Maestra</button>
+        <button class="st" id="bClose">Cerrar</button>
+        <button id="bPst">Realizar PST</button>
+        <button id="bCal">Calibrar PST</button>
+        <button id="bNorm" class="wide">Normalizar</button>
+        <button id="bOvr" class="wide">Abrir con override</button>
+      </div>
+      <div class="ovr">Tiempo override <input type="number" id="ovrMin" min="1" max="60"> min</div>
+      <div class="msg" id="msg"></div>
+      <div class="pumpline"><span><span class="dot" id="dPump"></span>Bomba</span><span><span class="dot" id="dSol"></span>Solenoide</span></div>
+      <div class="esdw">
+        <button class="esd" id="esd" aria-pressed="false" aria-label="Parada de emergencia">STOP</button>
+        <div class="esdl"><b>Parada de emergencia</b><br>Con retención. Al soltarla hay que normalizar.</div>
+      </div>
+    </div>
+
+    <div class="svgw">
+      <svg id="valve" viewBox="0 0 440 830" role="img" aria-label="Corte de la VSS con actuador y VPX">
+        <!-- tubing -->
+        <path class="tube" d="M0 246 H100"/>
+        <path class="tubeflow" id="tubeFlow" d="M0 246 H100"/>
+        <text x="2" y="236" class="lbl-m">tubing 3/8" desde el mSafe</text>
+        <text x="2" y="268" class="lbl" id="tPa">Pact 0 psi</text>
+
+        <!-- VPX -->
+        <rect x="150" y="12" width="120" height="226" rx="6" class="vpx-body"/>
+        <rect x="146" y="6" width="128" height="12" rx="3" fill="#1f1f1f"/>
+        <rect x="160" y="22" width="102" height="208" class="vpx-in"/>
+        <rect x="246" y="18" width="12" height="194" class="pcb"/>
+        <circle id="sPow" cx="249" cy="23" r="2.3" class="sled"/>
+        <circle id="sStat" cx="255" cy="23" r="2.3" class="sled"/>
+        <g id="sLeds"></g>
+        <text x="156" y="252" class="lbl-m" transform="rotate(-90 156 252)"></text>
+        <text x="174" y="34" class="lbl-m">VPX-dWELL</text>
+
+        <!-- actuator housing -->
+        <rect x="114" y="254" width="192" height="212" class="act-in"/>
+        <rect id="oil" x="114" y="254" width="192" height="8" class="oil"/>
+        <g id="springG"></g>
+        <rect x="100" y="238" width="220" height="16" class="teal"/>
+        <rect x="100" y="254" width="14" height="212" class="teal"/>
+        <rect x="306" y="254" width="14" height="212" class="teal"/>
+        <rect x="100" y="466" width="220" height="16" class="teal"/>
+        <rect x="92" y="244" width="10" height="10" class="steel"/>
+        <rect x="318" y="244" width="10" height="10" class="steel"/>
+
+        <!-- body -->
+        <rect x="118" y="522" width="184" height="284" rx="18" class="teal"/>
+        <rect x="184" y="484" width="52" height="316" class="cav"/>
+        <rect x="10" y="620" width="420" height="40" class="fluid"/>
+        <rect x="8" y="590" width="22" height="100" class="teal-d"/>
+        <rect x="410" y="590" width="22" height="100" class="teal-d"/>
+        <rect x="178" y="614" width="8" height="52" class="steel"/>
+        <rect x="234" y="614" width="8" height="52" class="steel"/>
+        <path id="flow" class="flow" d="M12 640 H428"/>
+
+        <!-- gate -->
+        <g id="gate">
+          <rect x="188" y="480" width="44" height="190" class="steel"/>
+          <rect x="190" y="500" width="40" height="40" class="fluid"/>
+        </g>
+        <!-- bonnet -->
+        <rect x="160" y="482" width="100" height="46" class="teal-d"/>
+        <rect x="194" y="490" width="32" height="30" fill="#5a4a2a"/>
+
+        <!-- moving stem assy -->
+        <g id="mov">
+          <rect x="198" y="44" width="24" height="220" class="steel"/>
+          <rect x="196" y="50" width="48" height="15" rx="2" fill="#d7dbde" stroke="#888"/>
+          <rect x="239" y="53" width="5" height="4.5" fill="#d32"/>
+          <rect x="239" y="57.5" width="5" height="4.5" fill="#25c"/>
+          <rect x="115" y="262" width="190" height="22" class="steel"/>
+          <rect x="115" y="268" width="190" height="3" fill="#333"/>
+          <rect x="198" y="284" width="24" height="200" class="steel"/>
+        </g>
+
+        <!-- labels -->
+        <text x="34" y="608" class="lbl" id="tPC">PC</text>
+        <text x="350" y="608" class="lbl" id="tPL">PL</text>
+        <text x="34" y="712" class="lbl-m">aguas arriba</text>
+        <text x="350" y="712" class="lbl-m">aguas abajo</text>
+        <text x="270" y="510" class="lbl-m">empaquetadura</text>
+
+        <!-- forces -->
+        <g id="fH"><line x1="344" y1="262" x2="344" y2="300" stroke-width="4" class="arrow-h"/><path class="arrow-h" d="M336 300 L352 300 L344 314 Z"/></g>
+        <text x="352" y="258" class="lbl-m">F hidráulica</text>
+        <g id="fS"><line x1="372" y1="466" x2="372" y2="420" stroke-width="4" class="arrow-s"/><path class="arrow-s" d="M364 420 L380 420 L372 406 Z"/></g>
+        <text x="330" y="486" class="lbl-m">F resorte + PL·vástago</text>
+        <text x="330" y="372" class="lbl" id="tF"></text>
+      </svg>
+      <div class="ro">
+        <div><span>Apertura real</span><b id="rX">0%</b></div>
+        <div><span>Lectura VPX en el mSafe</span><b id="rS">–</b></div>
+        <div><span>Presión de actuador</span><b id="rPa">0 psi</b></div>
+        <div><span>Velocidad del vástago</span><b id="rV">0 mm/s</b></div>
+        <div><span>Paso de fluido</span><b id="rQ">0%</b></div>
+        <div><span>Posición en el mSafe</span><b id="rPos">–</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VPX PANEL -->
+  <aside class="pnl vpxp">
+    <h2>Placa VPX-dWELL <span class="code">código 76700-1</span></h2>
+    <div class="sw100">
+      <span style="font-size:12px">SW100</span>
+      <button class="tg" id="sw14"><span class="knob"></span>1-4</button>
+      <button class="tg" id="sw23"><span class="knob"></span>2-3</button>
+    </div>
+    <div class="mode-l" id="modeL"></div>
+    <div class="leds2"><span><span class="pl" id="pPow"></span>Alimentación (analógico)</span><span><span class="pl" id="pStat"></span>Estado (digital)</span></div>
+    <button class="btn" id="plate" style="width:100%">Quitar placa protectora</button>
+    <div class="board locked" id="board"></div>
+    <div class="outs">
+      <div>D_CLOSE (pines 1-2)<br><b id="oC">–</b></div>
+      <div>D_OPEN (pines 3-4)<br><b id="oO">–</b></div>
+      <div>Lazo 4-20 mA<br><b id="oMA">–</b></div>
+      <div>Carrera VPX<br><b id="oPct">–</b></div>
+    </div>
+    <div class="cal">
+      <h3>Calibración según manual M-1079</h3>
+      <ol id="calSteps"></ol>
+      <div class="hint" id="calHint"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn" id="dipFab">DIPs de fábrica</button>
+        <button class="btn" id="dipEx">Ejemplo del manual</button>
+      </div>
+      <div class="hint">Modelo supuesto, a validar con ingeniería: un DIP en OFF corta la cadena debajo de su reed. El tramo de arriba (hasta el primer corte) da CERRADA y el de abajo (después del último corte) da ABIERTA. En analógico, esos mismos cortes fijan los extremos de 20 y 4 mA.</div>
+    </div>
+  </aside>
+
+  <section class="bottom">
+    <div class="pnl">
+      <h2>Tendencia (últimos 60 s simulados)</h2>
+      <canvas id="cT" height="230"></canvas>
+      <div class="legend"><span><i style="background:var(--teal-l)"></i>Apertura real</span><span><i style="background:var(--yellow)"></i>Lectura VPX</span><span><i style="background:var(--oil)"></i>Presión actuador</span><span><i style="background:var(--blue)"></i>PL</span></div>
+      <h2 style="margin-top:14px">Firma de válvula</h2>
+      <canvas id="cF" height="200"></canvas>
+      <div class="legend"><span><i style="background:var(--yellow)"></i>Maniobra actual</span><span><i style="background:var(--muted)"></i>Maniobra anterior</span><span>Presión de actuador contra apertura (escala ajustada a la zona de maniobra). Si la curva sube, aumentó la fricción; si baja, el resorte perdió fuerza.</span></div>
+    </div>
+    <div class="pnl">
+      <h2>Física de la válvula</h2>
+      <table id="phys"></table>
+      <div id="physW" style="margin-top:8px;font-size:12.5px"></div>
+      <h2 style="margin-top:14px">Último PST</h2>
+      <table id="pstT"></table>
+    </div>
+    <div class="pnl">
+      <h2>Mapa Modbus en vivo</h2>
+      <table id="mb"></table>
+      <h2 style="margin-top:14px">Eventos</h2>
+      <div class="log" id="log"></div>
+    </div>
+  </section>
+</main>
+<p class="foot">Modelo físico simplificado con datos del plano del resorte (k 40,1 kgf/cm, largo libre 342 mm, montaje supuesto 280 mm con la válvula cerrada), fricción de empaquetadura y de esclusa estimadas, y retorno por tubing laminar más orificio de solenoide. Sirve para entrenamiento y demostración; no reemplaza ensayos de campo.</p>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+// ---------- constantes de la válvula (pulgadas / lbf / psi; volúmenes en cm3) ----------
+const K={A:18.45,Acm:119,sc:7.7,As:1.225,Aseat:5.16,mu:0.12,k:224.6,pre:2.441,si:3.031,C:0.05};
+const LBF2KGF=0.4536;
+let S,st,ms,VR,SE,buf,firma,firmaPrev,logs,lastMA=4,dirty=true,lastX=0,vel=0;
+
+function init(){
+  S={PC:1500,PL:500,plLo:200,plHi:1200,trig:true,pOff:1500,pOn:1100,relief:2500,qPump:2,tubeL:10,quick:false,
+    f:{packing:false,spring:false,stuck:false,sand:false,leak:false,decoupled:false,magnet:false,loose:false},
+    manual:false,manX:0,plRamp:0,speed:S?S.speed:1,paused:false,ovrMin:2,
+    vpx:{sw14:false,sw23:true,dips:Array(33).fill(true),reeds:Array(33).fill(0),gap:2,power:true,plate:true,invert:false,noMag4:false},
+    hasVPX:true,inType:'digital',tOutOpen:120,tOutClose:90};
+  [3,9,17,29].forEach(i=>S.vpx.dips[i]=false);
+  st={x:0,Pa:0,moving:false,sol:false,pump:false,gx:0,t:0};
+  ms={cmd:null,cmdT:0,opening:false,inhib:false,ultCi:'ENCENDIDO',esd:false,ovr:0,pst:null,pstRef:null,pstLast:'-',pstInfo:null,
+      screen:0,wasOpen:false,comps:[],pumpDis:false,hydInsuf:false,leak:'',pos:'',sampleT:0,firmaT:0};
+  buf=[];firma=[];firmaPrev=[];logs=[];
+  VR=vpxRead(0,true);SE=sense(VR);ms.pos=posLabel();
+  log('Equipo encendido: válvulas cerradas, esperando comando','info');
+  dirty=true;
+}
+
+// ---------- física ----------
+function PP(){return{PC:S.PC,PL:S.PL,qp:S.qPump*1000/60,R:S.quick?0.02:0.0669*S.tubeL,Kq:S.quick?0.0015:0.00683,relief:S.relief,f:S.f,manual:S.manual};}
+function forces(x,P){
+  const cover=clamp((0.3-x)/0.3,0,1), dp=Math.max(0,P.PC-P.PL);
+  const Pb=P.PL+dp*cover;
+  const Fs=K.k*(K.pre+x*K.si)*(P.f.spring?0.55:1);
+  const Fstem=Pb*K.As;
+  const Fgate=K.mu*dp*K.Aseat*cover;
+  const Fk=(120+0.015*Pb)*(P.f.packing?5:1)+Fgate;
+  return{Pb,Fs,Fstem,Fgate,Fk};
+}
+function qOut(P,R,Kq){if(P<=0)return 0;return(-R+Math.sqrt(R*R+4*Kq*P))/(2*Kq);}
+function stepPhys(s,P,dt){
+  const fo=forces(s.x,P);
+  let Q=0;
+  if(s.sol){if(s.pump)Q+=P.qp;}else Q-=qOut(s.Pa,P.R,P.Kq);
+  if(P.f.leak)Q-=0.0006*s.Pa;
+  if(s.Pa>P.relief)Q-=qOut(s.Pa-P.relief,0.05,0.002);
+  s.Pa=Math.max(0,s.Pa+Q/K.C*dt);
+  if(P.f.stuck||P.manual){s.moving=false;return fo;}
+  const Fup=fo.Fs+fo.Fstem, fr=s.moving?fo.Fk:1.3*fo.Fk;
+  const Pop=(Fup+fr)/K.A, Pcl=Math.max(0,(Fup-fr)/K.A);
+  const xmin=P.f.sand?0.07:0, vol=K.Acm*K.sc;
+  if(s.Pa>Pop&&s.x<1){
+    s.x+=(s.Pa-Pop)*K.C/vol;s.Pa=Pop;s.moving=true;
+    if(s.x>=1){s.Pa+=(s.x-1)*vol/K.C;s.x=1;s.moving=false;}
+  }else if(s.Pa<Pcl&&s.x>xmin){
+    s.x-=(Pcl-s.Pa)*K.C/vol;s.Pa=Pcl;s.moving=true;
+    if(s.x<=xmin){s.Pa=Math.max(0,s.Pa-(xmin-s.x)*vol/K.C);s.x=xmin;s.moving=false;}
+  }else s.moving=false;
+  return fo;
+}
+function estimate(){
+  const P=PP();P.manual=false;P.f=Object.assign({},S.f,{stuck:false,leak:false});
+  let s={x:0,Pa:0,sol:true,pump:true,moving:false},t=0,tO=null;
+  while(t<300){s.pump=s.Pa<S.pOff;if(!s.pump&&s.x<0.999)break;stepPhys(s,P,0.01);t+=0.01;if(s.x>=0.999){tO=t;break;}}
+  const full=pressures().full;
+  s={x:1,Pa:Math.max(S.pOff,full),sol:false,pump:false,moving:false};t=0;let tC=null;const xm=S.f.sand?0.07:0;
+  while(t<300){stepPhys(s,P,0.01);t+=0.01;if(s.x<=xm+0.001){tC=t;break;}if(s.Pa<0.5&&!s.moving&&t>2)break;}
+  return{tO,tC};
+}
+function pressures(){
+  const P=PP();const f0=forces(0,P),f1=forces(1,P);
+  const crack=(f0.Fs+f0.Fstem+1.3*f0.Fk)/K.A;
+  const full=(f1.Fs+f1.Fstem+f1.Fk)/K.A;
+  const hold=Math.max(0,(f1.Fs+f1.Fstem-1.3*f1.Fk)/K.A);
+  const fclose=f1.Fs+f1.Fstem-f1.Fk;
+  const fclose0=f0.Fs+f0.Fstem-f0.Fk;
+  return{f0,f1,crack,full,hold,fclose,fclose0};
+}
+
+// ---------- VPX ----------
+function vpxRead(x,det){
+  const v=S.vpx;const o={closed:Array(33).fill(false),lit:Array(33).fill(false),cOut:false,oOut:false,mA:0,pow:false,stat:false,mode:'off',frac:null};
+  if(!v.power)return o;
+  o.pow=true;
+  const valid=v.sw14!==v.sw23;o.mode=valid?(v.sw14?'analog':'digital'):'error';
+  let n=v.gap<1?5:v.gap<=3?4:v.gap<=4?3:v.gap<=5?2:0;
+  if(S.f.magnet)n=0;
+  const m=4.5+24*x+(S.f.loose?2:0);
+  const top=Math.round(m-(n-1)/2);
+  for(let i=1;i<=32;i++){
+    let inW=n>0&&i>=top&&i<top+n;
+    if(!det&&inW&&v.gap>3&&(i===top||i===top+n-1)&&Math.random()<(v.gap-3)*0.3)inW=false;
+    const r=v.reeds[i];o.closed[i]=(inW&&r!==1)||r===2;
+  }
+  if(!valid){o.mA=lastMA;return o;}
+  const cuts=[];for(let i=1;i<=32;i++)if(!v.dips[i])cuts.push(i);
+  const fc=cuts.length?cuts[0]:32, lc=cuts.length?cuts[cuts.length-1]:0;
+  if(o.mode==='digital'){
+    for(let i=1;i<=32;i++){
+      if(!o.closed[i])continue;
+      const inTop=i<=fc,inBot=i>lc;
+      if(inTop||inBot)o.lit[i]=true;
+      if(inTop)o.cOut=true;if(inBot)o.oOut=true;
+    }
+    if(v.invert){const t=o.cOut;o.cOut=o.oOut;o.oOut=t;}
+    o.stat=o.cOut||o.oOut;
+  }else{
+    let sum=0,c=0;
+    for(let i=1;i<=32;i++)if(o.closed[i]){o.lit[i]=true;sum+=i;c++;}
+    const rc=cuts.length>=2?fc+1.5:2.5, ro=cuts.length>=2?lc+1-1.5:30.5;
+    if(c===0){o.mA=v.noMag4?4:3.5;}
+    else{const fr=clamp((sum/c-rc)/(ro-rc),-0.03,1.03);o.frac=fr;o.mA=v.invert?4+16*fr:20-16*fr;}
+    o.mA=Math.round(o.mA*100)/100;
+    if(!det)lastMA=o.mA;
+  }
+  return o;
+}
+function sense(vr){
+  if(!S.hasVPX)return{inferred:true,open:false,closed:false};
+  if(S.inType==='digital'){
+    if(vr.mode!=='digital')return{open:false,closed:false};
+    return{open:vr.oOut,closed:vr.cOut};
+  }
+  let mA=(vr.mode==='analog'||vr.mode==='error')?vr.mA:0;
+  if(!vr.pow)mA=0;
+  if(mA<3.6||mA>21)return{fault:true,mA,open:false,closed:false};
+  const pct=S.vpx.invert?(mA-4)/16:(20-mA)/16;
+  return{mA,pct,open:pct>=0.95,closed:pct<=0.05};
+}
+
+// ---------- lógica mSafe ----------
+function msg(t){const m=$('#msg');m.textContent=t;m.classList.add('on');clearTimeout(msg.h);msg.h=setTimeout(()=>m.classList.remove('on'),6000);}
+function log(t,k){logs.unshift({t:st?st.t:0,m:t,k:k||'info'});if(logs.length>120)logs.pop();logDirty=true;}
+let logDirty=true;
+function newFirma(){if(firma.length>3)firmaPrev=firma;firma=[];}
+function cmdOpen(ovr){
+  if(ms.esd)return msg('Apertura rechazada: la parada de emergencia está activa.');
+  if(ms.inhib)return msg('Apertura rechazada: normalizá primero (última causa: '+ms.ultCi+').');
+  if(ms.pumpDis)return msg('Apertura rechazada: FUGA HID. GRAVE, bomba deshabilitada. Corregí la fuga y normalizá.');
+  if(S.trig&&S.PL>S.plHi)return msg('Apertura rechazada: la PL está sobre el trigger alto.');
+  if(S.trig&&S.PL<S.plLo&&!ovr)return msg('Apertura rechazada: la PL está bajo el trigger bajo. Usá "Abrir con override".');
+  if(ovr){ms.ovr=S.ovrMin*60;log('Apertura con override de '+S.ovrMin+' min','warn');}
+  ms.pst=null;st.sol=true;ms.opening=true;ms.cmd='open';ms.cmdT=st.t;ms.wasOpen=false;ms.hydInsuf=false;newFirma();
+  if(!ovr)log('Comando ABRIR V. Maestra','info');
+}
+function cmdClose(reason,inhib,text){
+  st.sol=false;ms.opening=false;ms.cmd='close';ms.cmdT=st.t;ms.ultCi=reason;ms.pst=null;ms.ovr=0;ms.hydInsuf=false;
+  if(inhib)ms.inhib=true;newFirma();log(text||('Cierre: '+reason),inhib?'alarm':'info');
+}
+function normalize(){
+  if(ms.esd)return msg('No se puede normalizar: restablecé primero el pulsador de emergencia.');
+  if(S.trig&&(S.PL>S.plHi||(S.PL<S.plLo&&ms.inhib&&ms.ultCi==='PL BAJA')))return msg('No se puede normalizar: la PL sigue fuera de rango.');
+  if(ms.pumpDis&&S.f.leak)return msg('No se puede normalizar: la fuga hidráulica persiste.');
+  ms.inhib=false;ms.pumpDis=false;if(!S.f.leak)ms.comps=[];
+  log('Normalizado: aperturas habilitadas','info');msg('Normalizado. Ya podés abrir.');
+}
+function pstStart(cal){
+  if(!S.hasVPX)return msg('Sin indicador de posición el PST no puede verificar el recorrido.');
+  if(ms.inhib||ms.esd)return msg('PST rechazado: equipo inhibido.');
+  if(!SE.open)return msg('El PST requiere la válvula ABIERTA y confirmada por el VPX.');
+  ms.pst={phase:'close',t0:st.t,cal:!!cal,minX:st.x};st.sol=false;st.pump=false;ms.opening=false;newFirma();
+  log(cal?'Calibración de PST iniciada':'PST iniciado','info');
+}
+function pstFinish(p){
+  const R=ms.pstRef;let res;
+  if(p.tc==null)res='NO CIERRA!';else if(p.to==null)res='NO ABRE!';
+  else if(p.cal||!R){ms.pstRef={tc:p.tc,to:p.to};res='CALIBRACIÓN';}
+  else if(p.tc>3*R.tc)res='NO CIERRA!';else if(p.to>3*R.to)res='NO ABRE!';
+  else if(p.tc>1.3*R.tc)res='CI. LENTO!';else if(p.to>1.3*R.to)res='AP. LENTA!';else res='OK';
+  ms.pstLast=res;ms.pstInfo={tc:p.tc,to:p.to,minX:p.minX,ref:ms.pstRef?Object.assign({},ms.pstRef):null};ms.pst=null;
+  log('Resultado PST: '+res,res==='OK'||res==='CALIBRACIÓN'?'info':'warn');dirty=true;
+}
+function pumpCtl(){
+  if(!st.sol||ms.pumpDis){st.pump=false;return;}
+  if(ms.opening){st.pump=st.Pa<S.pOff;if(!st.pump)ms.opening=false;return;}
+  if(!st.pump&&st.Pa<S.pOn){st.pump=true;ms.comps.push(st.t);const n=ms.comps.length;if(n<=3||n%5===0)log('Compensación hidráulica n° '+n,'info');}
+  if(st.pump&&st.Pa>=S.pOff)st.pump=false;
+}
+function posLabel(){
+  if(ms.pst)return ms.pst.phase==='close'?'PST CIERRA':'PST ABRE';
+  if(!S.hasVPX){if(st.sol)return(ms.opening?'ABRIENDO':'AB.INF');return st.Pa>40?'CERRANDO':'CER.INF';}
+  if(SE.fault)return'FALLA SENS.';
+  if(SE.open&&SE.closed)return'ERR. IPR';
+  if(SE.open)return'ABIERTA';if(SE.closed)return'CERRADA';
+  const el=st.t-ms.cmdT;
+  if(ms.cmd==='open'){if(ms.wasOpen)return'P. INTERM.';return el>S.tOutOpen?'AP. FALLA':'ABRIENDO';}
+  if(ms.cmd==='close')return el>S.tOutClose?'C. FALLA':'CERRANDO';
+  return'P. INTERM.';
+}
+function msLogic(dt){
+  const t=st.t;
+  ms.comps=ms.comps.filter(c=>t-c<7200);
+  const c1=ms.comps.filter(c=>t-c<3600).length,c2=ms.comps.length;
+  if(c1>20&&!ms.pumpDis){ms.pumpDis=true;log('FUGA HID. GRAVE: más de 20 compensaciones en 1 h, bomba deshabilitada','alarm');}
+  ms.leak=ms.pumpDis?'GRAVE!':c2>=20?'ALTA':c2>=14?'MEDIA':c2>=9?'BAJA':'';
+  if(ms.ovr>0){ms.ovr-=dt;if(ms.ovr<=0){ms.ovr=0;if(S.trig&&S.PL<S.plLo)cmdClose('PL BAJA',true,'Override finalizado con PL bajo el trigger: cierre');else log('Override finalizado: PL en rango, válvula operativa','info');}}
+  if(S.trig&&(st.sol||ms.pst)){
+    if(S.PL>S.plHi)cmdClose('PL ALTA',true,'Trigger PL ALTA ('+Math.round(S.PL)+' > '+S.plHi+' psi): cierre');
+    else if(S.PL<S.plLo&&ms.ovr<=0)cmdClose('PL BAJA',true,'Trigger PL BAJA ('+Math.round(S.PL)+' < '+S.plLo+' psi): cierre');
+  }
+  if(SE.open&&ms.cmd==='open')ms.wasOpen=true;
+  if(ms.cmd==='open'&&!ms.pst&&ms.wasOpen&&S.hasVPX&&!SE.open&&!SE.fault&&!ms.hydInsuf){ms.hydInsuf=true;log('PRESIÓN HID. INSUF.: la válvula perdió la posición abierta','warn');}
+  if(SE.open)ms.hydInsuf=false;
+  const p=ms.pst;
+  if(p){
+    p.minX=Math.min(p.minX,st.x);
+    if(p.phase==='close'){
+      const lost=S.inType==='analog'?(SE.fault||SE.pct<0.85):!SE.open;
+      const lim=ms.pstRef?ms.pstRef.tc*3:40;
+      if(lost||t-p.t0>lim){p.tc=lost?t-p.t0:null;p.phase='open';p.t1=t;st.sol=true;ms.opening=true;}
+    }else{
+      if(SE.open){p.to=t-p.t1;pstFinish(p);}
+      else if(t-p.t1>(ms.pstRef?ms.pstRef.to*3:90)){p.to=null;pstFinish(p);}
+    }
+  }
+  const lab=posLabel();
+  if(lab!==ms.pos&&ms.pos.startsWith('PST')){ms.pos=lab;}
+  if(lab!==ms.pos){
+    const el=(t-ms.cmdT).toFixed(1).replace('.',',');
+    if(lab==='ABIERTA'&&ms.cmd==='open')log('Confirmada ABIERTA a los '+el+' s del comando','info');
+    else if(lab==='CERRADA'&&ms.cmd==='close')log('Confirmada CERRADA a los '+el+' s del comando','info');
+    else if(['AP. FALLA','C. FALLA','ERR. IPR','FALLA SENS.'].includes(lab))log('Posición: '+lab,'alarm');
+    ms.pos=lab;
+  }
+}
+function vStat(){if(ms.inhib)return ms.ultCi;if(ms.ovr>0)return'OVERRIDE';return'OPERATIVA';}
+function gState(){
+  if(ms.esd)return'BOTÓN SHUTDOWN';if(ms.pumpDis)return'FUGA HID. GRAVE!';if(ms.hydInsuf)return'PRESIÓN HID. INSUF.';
+  if(ms.leak)return'FUGA HID. '+ms.leak;if(st.pump)return'PRESURIZANDO';if(!st.sol&&st.Pa>40)return'DESPRESURIZANDO';return'LISTO';
+}
+
+// ---------- bucle ----------
+function tick(dt){
+  st.t+=dt;
+  if(S.plRamp){S.PL=clamp(S.PL+S.plRamp*dt,0,6000);if(ms.inhib)S.plRamp=0;}
+  if(S.manual)st.x+=(S.manX-st.x)*Math.min(1,dt*3);
+  pumpCtl();
+  const P=PP();stepPhys(st,P,dt);
+  if(!S.f.decoupled)st.gx=st.x;
+  VR=vpxRead(st.x,false);SE=sense(VR);
+  msLogic(dt);
+  ms.sampleT+=dt;
+  if(ms.sampleT>=0.1){ms.sampleT=0;
+    let xs=null;if(!S.hasVPX)xs=null;else if(S.inType==='analog')xs=SE.fault?null:SE.pct*100;else xs=SE.open&&!SE.closed?100:SE.closed&&!SE.open?0:null;
+    buf.push({t:st.t,xr:st.x*100,xs,Pa:st.Pa,PL:S.PL});if(buf.length>700)buf.shift();}
+  ms.firmaT+=dt;
+  if(ms.firmaT>=0.05){ms.firmaT=0;if(st.moving||st.pump||(!st.sol&&st.Pa>5)){firma.push([st.x*100,st.Pa]);if(firma.length>3000)firma.shift();}}
+}
+let lastNow=performance.now(),slow=0;
+function frame(now){
+  const real=Math.min(0.1,(now-lastNow)/1000);lastNow=now;
+  if(!S.paused){const sim=real*S.speed,h=0.005,n=Math.max(1,Math.ceil(sim/h)),d=sim/n;const x0=st.x;for(let i=0;i<n;i++)tick(d);vel=sim>0?(st.x-x0)*77/sim:0;}
+  render();
+  slow+=real;if(slow>0.3){slow=0;renderSlow();}
+  requestAnimationFrame(frame);
+}
+
+// ---------- render ----------
+const svgNS='http://www.w3.org/2000/svg';
+const sLeds=[],springC=[];
+function buildSvg(){
+  const g=$('#sLeds');
+  for(let i=1;i<=32;i++){const c=document.createElementNS(svgNS,'circle');c.setAttribute('cx',252);c.setAttribute('cy',40+(i-1)*5);c.setAttribute('r',1.9);c.setAttribute('class','sled');g.appendChild(c);sLeds[i]=c;}
+  const sg=$('#springG');
+  for(let i=0;i<18;i++){const c=document.createElementNS(svgNS,'circle');c.setAttribute('r',5);c.setAttribute('class','spr');sg.appendChild(c);springC.push(c);}
+}
+const board=$('#board'),dipEls=[],reedEls=[],ledEls=[],cutEls=[];
+function buildBoard(){
+  board.innerHTML='';
+  for(let g=1;g<=4;g++){
+    const h=document.createElement('div');h.className='gh';h.textContent='Grupo '+g;board.appendChild(h);
+    for(let n=1;n<=8;n++){
+      const i=(g-1)*8+n;
+      const r=document.createElement('div');r.className='br';
+      r.innerHTML='<button class="dip" data-i="'+i+'" aria-label="DIP '+n+' grupo '+g+'"></button><button class="reed" data-r="'+i+'" aria-label="Reed '+i+'"></button><span class="rn">n° '+i+'</span><span class="bled"></span>';
+      board.appendChild(r);
+      dipEls[i]=r.children[0];reedEls[i]=r.children[1];ledEls[i]=r.children[3];
+      const c=document.createElement('div');c.className='cut';c.style.display='none';board.appendChild(c);cutEls[i]=c;
+    }
+  }
+}
+function fmt(n,d){return(Math.round(n*Math.pow(10,d||0))/Math.pow(10,d||0)).toLocaleString('es-AR',{minimumFractionDigits:d||0,maximumFractionDigits:d||0});}
+function pad(s,n){s=String(s);return s.length>n?s.slice(0,n):s+' '.repeat(n-s.length);}
+function center(s,n){s=String(s);const p=Math.max(0,Math.floor((n-s.length)/2));return pad(' '.repeat(p)+s,n);}
+function mmss(t){t=Math.max(0,Math.floor(t));return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');}
+function render(){
+  const x=st.x,dy=120*x;
+  $('#mov').setAttribute('transform','translate(0 '+dy.toFixed(2)+')');
+  $('#gate').setAttribute('transform','translate(0 '+(120*st.gx).toFixed(2)+')');
+  $('#oil').setAttribute('height',(8+dy).toFixed(2));
+  $('#oil').style.opacity=(0.35+0.65*clamp(st.Pa/3000,0,1)).toFixed(2);
+  const y1=284+dy,y2=466,N=9,p=(y2-y1)/N;
+  for(let i=0;i<N;i++){springC[i].setAttribute('cx',134);springC[i].setAttribute('cy',(y1+(i+0.25)*p).toFixed(1));springC[N+i].setAttribute('cx',286);springC[N+i].setAttribute('cy',(y1+(i+0.75)*p).toFixed(1));}
+  for(let i=1;i<=32;i++)sLeds[i].classList.toggle('on',VR.lit[i]);
+  $('#sPow').classList.toggle('on',VR.pow&&VR.mode==='analog');
+  $('#sStat').classList.toggle('on',VR.stat);
+  const yTop=500+120*st.gx,ov=Math.max(0,Math.min(660,yTop+40)-Math.max(620,yTop))/40;
+  const fl=$('#flow');fl.style.opacity=ov.toFixed(2);fl.style.strokeDashoffset=(-(st.t*60*ov)%22).toFixed(1);
+  const tf=$('#tubeFlow');const inflow=st.sol&&st.pump,out=!st.sol&&st.Pa>3;
+  tf.style.opacity=inflow||out?1:0.15;tf.style.strokeDashoffset=((inflow?-1:1)*(st.t*30)%14).toFixed(1);
+  $('#tPa').textContent='Pact '+fmt(st.Pa)+' psi';
+  $('#tPC').textContent='PC '+fmt(S.PC)+' psi';$('#tPL').textContent='PL '+fmt(S.PL)+' psi';
+  const fo=forces(x,PP());const Fh=st.Pa*K.A,Fu=fo.Fs+fo.Fstem;
+  const lh=clamp(Fh/250,4,150),lu=clamp(Fu/250,4,150);
+  $('#fH').innerHTML='<line x1="344" y1="262" x2="344" y2="'+(262+lh)+'" stroke-width="4" class="arrow-h"/><path class="arrow-h" d="M336 '+(262+lh)+' L352 '+(262+lh)+' L344 '+(276+lh)+' Z"/>';
+  $('#fS').innerHTML='<line x1="372" y1="466" x2="372" y2="'+(466-lu)+'" stroke-width="4" class="arrow-s"/><path class="arrow-s" d="M364 '+(466-lu)+' L380 '+(466-lu)+' L372 '+(452-lu)+' Z"/>';
+  $('#tF').textContent=fmt(Fh*LBF2KGF)+' / '+fmt(Fu*LBF2KGF)+' kgf';
+  // readouts
+  $('#rX').textContent=fmt(x*100,1)+' %';
+  let rs='–';
+  if(!S.hasVPX)rs='sin VPX';
+  else if(S.inType==='analog')rs=SE.fault?'falla '+fmt(SE.mA||0,2)+' mA':fmt(SE.pct*100,1)+' % abierta ('+fmt(SE.mA,2)+' mA)';
+  else rs=(SE.open?'ABIERTO ':'')+(SE.closed?'CERRADO':'')||'sin contacto';
+  $('#rS').textContent=rs;
+  $('#rPa').textContent=fmt(st.Pa)+' psi';
+  $('#rV').textContent=fmt(vel,1)+' mm/s';
+  $('#rQ').textContent=fmt(ov*100)+' %';
+  const pl=ms.pos;$('#rPos').textContent=pl;
+  $('#rPos').className=['AP. FALLA','C. FALLA','ERR. IPR','FALLA SENS.'].includes(pl)?'alarm':pl==='P. INTERM.'?'warn':'';
+  $('#clock').textContent=mmss(st.t);
+  // LCD
+  const L=20;let lines;
+  if(ms.screen===0)lines=[center('- ESTADO GENERAL -',L),center(gState(),L),pad('MODO: LOCAL/REMOTO',L),pad(Math.round(S.pOn)+'<'+Math.round(st.Pa)+'<'+Math.round(S.relief)+' PSI',L)];
+  else if(ms.screen===1){let ps=ms.pos;if(S.inType==='analog'&&S.hasVPX&&!SE.fault&&!ms.pst)ps+=' '+fmt(SE.pct*100)+'%';lines=[center('## V. MAESTRA ##',L),pad('STAT: '+vStat(),L),pad('POS: '+ps,L),pad('PL: '+S.plLo+'<'+Math.round(S.PL)+'<'+S.plHi,L)];}
+  else lines=[pad('ULT. CI: '+ms.ultCi,L),pad('ULT. PST: '+ms.pstLast,L),pad('PC: '+Math.round(S.PC)+' PSI',L),pad(ms.ovr>0?'OVERRIDE '+mmss(ms.ovr):'COMPENS.: '+ms.comps.length,L)];
+  $('#lcd').textContent=lines.join('\n');
+  $('#dPump').classList.toggle('on',st.pump);$('#dSol').classList.toggle('on',st.sol);
+  // VPX panel
+  for(let i=1;i<=32;i++){ledEls[i].classList.toggle('on',VR.lit[i]);}
+  $('#pPow').classList.toggle('on',VR.pow&&VR.mode==='analog');
+  $('#pStat').classList.toggle('on',VR.stat);
+  const inv=S.vpx.invert;
+  $('#oC').textContent=VR.mode==='digital'?(VR.cOut?'cerrado':'abierto'):'no usado';
+  $('#oO').textContent=VR.mode==='digital'?(VR.oOut?'cerrado':'abierto'):'no usado';
+  $('#oMA').textContent=!VR.pow?'0 mA':VR.mode==='analog'||VR.mode==='error'?fmt(VR.mA,2)+' mA':'no usado';
+  if(VR.mode==='analog'&&VR.pow){const mA=VR.mA;$('#oPct').textContent=mA<3.6?'sin señal':fmt((mA-4)/16*100,1)+' % ('+(inv?'0 % = cerrada':'0 % = abierta')+')';}
+  else $('#oPct').textContent='–';
+  drawTrend();drawFirma();
+  if(logDirty)renderLog();
+}
+function renderSlow(){
+  // VPX static parts
+  const v=S.vpx;
+  for(let i=1;i<=32;i++){dipEls[i].classList.toggle('off',!v.dips[i]);reedEls[i].className='reed'+(v.reeds[i]===1?' dead':v.reeds[i]===2?' stuck':'');cutEls[i].style.display=!v.dips[i]&&i<32?'block':'none';
+    reedEls[i].title=v.reeds[i]===1?'Reed abierto (falla)':v.reeds[i]===2?'Reed pegado (falla)':'Reed normal. Clic para simular falla';}
+  board.classList.toggle('locked',v.plate);
+  $('#plate').textContent=v.plate?'Quitar placa protectora':'Colocar placa protectora';
+  $('#sw14').classList.toggle('on',v.sw14);$('#sw23').classList.toggle('on',v.sw23);
+  $('#sw14').lastChild.textContent=' 1-4 '+(v.sw14?'ON':'OFF');$('#sw23').lastChild.textContent=' 2-3 '+(v.sw23?'ON':'OFF');
+  const ml=$('#modeL');
+  if(v.sw14===v.sw23){ml.textContent='Combinación prohibida: la señal queda congelada';ml.className='mode-l err';}
+  else{ml.textContent=v.sw14?'Modo analógico (4-20 mA por pasos)':'Modo digital (abierta / cerrada)';ml.className='mode-l';}
+  if((v.sw14?'analog':'digital')!==S.inType&&v.sw14!==v.sw23){ml.textContent+='. El mSafe espera '+(S.inType==='analog'?'analógico':'digital')+': no hay lectura válida';ml.className='mode-l err';}
+  renderCal();
+  // física
+  const pr=pressures(),f1=pr.f1,f0=pr.f0;
+  if(dirty){est=estimate();dirty=false;}
+  const rows=[
+    ['Resorte cerrada / abierta',fmt(f0.Fs*LBF2KGF)+' / '+fmt(f1.Fs*LBF2KGF)+' kgf'],
+    ['PL sobre el vástago',fmt(f1.Fstem*LBF2KGF)+' kgf'],
+    ['Fricción empaquetadura',fmt((f1.Fk)*LBF2KGF)+' kgf'],
+    ['Fricción esclusa al abrir (PC−PL)',fmt(f0.Fgate*LBF2KGF)+' kgf'],
+    ['CRACK (inicia apertura)',fmt(pr.crack)+' psi'],
+    ['Apertura completa',fmt(pr.full)+' psi'],
+    ['HOLD (sostiene abierta)',fmt(pr.hold)+' psi'],
+    ['Fuerza de cierre abierta / al asentar',fmt(pr.fclose*LBF2KGF)+' / '+fmt(pr.fclose0*LBF2KGF)+' kgf'],
+    ['Apertura estimada',est.tO==null?'no abre':fmt(est.tO,1)+' s'],
+    ['Cierre estimado',est.tC==null?'no cierra':fmt(est.tC,1)+' s']];
+  $('#phys').innerHTML=rows.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('');
+  const w=[];
+  if(S.pOff<pr.full)w.push('<div class="alarm">PUMP OFF ('+fmt(S.pOff)+') está bajo la presión de apertura completa: la válvula queda a medio abrir.</div>');
+  if(S.pOn<pr.full&&S.pOff>=pr.full)w.push('<div class="warn">PUMP ON está bajo la presión de apertura completa: entre compensaciones la válvula puede perder algunos milímetros.</div>');
+  if(S.pOn<pr.hold)w.push('<div class="alarm">PUMP ON está bajo el HOLD: riesgo de cierre parcial.</div>');
+  if(pr.fclose0<=0)w.push('<div class="alarm">La fricción supera al resorte cerca del cierre: la válvula no asienta sin presión de línea.</div>');
+  if(est.tC!=null&&est.tC>30)w.push('<div class="warn">Cierre mayor a 30 s: considerá escape rápido o acortar el tubing.</div>');
+  if(!w.length)w.push('<div class="ok">Parámetros hidráulicos coherentes con la válvula.</div>');
+  $('#physW').innerHTML=w.join('');
+  // PST
+  const pi=ms.pstInfo;
+  const pr2=[['Resultado',ms.pstLast]];
+  if(pi){pr2.push(['Tiempo hasta perder abierta',pi.tc==null?'no se movió':fmt(pi.tc,1)+' s'+(pi.ref?' (ref '+fmt(pi.ref.tc,1)+')':'')]);
+    pr2.push(['Tiempo de reapertura',pi.to==null?'no reabrió':fmt(pi.to,1)+' s'+(pi.ref?' (ref '+fmt(pi.ref.to,1)+')':'')]);
+    pr2.push(['Carrera real recorrida',fmt((1-pi.minX)*100,1)+' %']);}
+  else pr2.push(['Referencia',ms.pstRef?'guardada':'sin calibrar (el primer PST será la referencia)']);
+  if(S.inType==='digital')pr2.push(['Criterio','perder el switch de abierto']);else pr2.push(['Criterio','bajar al 85 % por lectura analógica']);
+  $('#pstT').innerHTML=pr2.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('');
+  // Modbus
+  const pos={'CERRADA':0,'ABIERTA':1,'CERRANDO':2,'ABRIENDO':3,'P. INTERM.':4,'ERR. IPR':5,'CER.INF':6,'AB.INF':7,'C. FALLA':8,'AP. FALLA':9,'PST CIERRA':2,'PST ABRE':3,'FALLA SENS.':5};
+  const sc={'OPERATIVA':0,'OVERRIDE':1,'BOTÓN ESD':8,'OP. LOCAL':9,'PL BAJA':14,'PL ALTA':15,'ENCENDIDO':7};
+  const pc={'OK':0,'CI. LENTO!':1,'AP. LENTA!':2,'NO CIERRA!':3,'NO ABRE!':4,'CALIBRACIÓN':5,'-':6};
+  const lk={'':0,'BAJA':1,'MEDIA':2,'ALTA':3,'GRAVE!':4};
+  const dig=S.hasVPX&&S.inType==='digital';
+  const mb=[['H40007 Estado general',gState()],['H40012 Estado VSS1',sc[vStat()]??0],['H40013 Última causa de cierre',sc[ms.ultCi]??0],['H40016 Posición VSS1',pos[ms.pos]??4],
+    ['H40018 Resultado PST (bit)',pc[ms.pstLast]],['H40073 Presión hidráulica',fmt(st.Pa)],['H40078 Estado de fuga',lk[ms.leak]],['H40090 PC',fmt(S.PC)],['H40097 PL',fmt(S.PL)],
+    ['Coil 1 Switch abierto VSS1',dig?(SE.open?1:0):'–'],['Coil 2 Switch cerrado VSS1',dig?(SE.closed?1:0):'–'],['Coil 9 Bomba',st.pump?1:0],['Coil 11 Pulsador ESD',ms.esd?1:0],['Coil 72 Listo para operar',(!ms.inhib&&!ms.esd&&gState()==='LISTO')?1:0]];
+  $('#mb').innerHTML=mb.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('');
+}
+let est={tO:null,tC:null};
+function renderCal(){
+  const v=S.vpx;
+  const savedMode=[v.sw14,v.sw23];v.sw14=false;v.sw23=true;const inv=v.invert;v.invert=false;
+  const a=vpxRead(0,true),b=vpxRead(1,true);
+  v.sw14=savedMode[0];v.sw23=savedMode[1];v.invert=inv;
+  const la=[],lb=[];for(let i=1;i<=32;i++){if(a.lit[i])la.push(i);if(b.lit[i])lb.push(i);}
+  const okC=la.length===1&&a.cOut&&!a.oOut, okO=lb.length===1&&b.oOut&&!b.cOut;
+  const digital=v.sw23&&!v.sw14;
+  const steps=[[!v.plate,'Quitar la placa protectora para acceder a los DIP'],[digital,'SW100 en digital: 1-4 OFF, 2-3 ON'],
+    [okC,'VSS cerrada: queda 1 solo LED ('+(la.length?'hoy n° '+la.join(', '):'ninguno')+')'],
+    [okO,'VSS abierta: queda 1 solo LED ('+(lb.length?'hoy n° '+lb.join(', '):'ninguno')+')'],
+    [v.plate&&okC&&okO,'Colocar la placa protectora']];
+  $('#calSteps').innerHTML=steps.map(s=>'<li><span class="'+(s[0]?'ok':'no')+'">'+(s[0]?'✓':'○')+'</span> '+s[1]+'</li>').join('');
+  let h='';
+  const cuts=[];for(let i=1;i<=32;i++)if(!v.dips[i])cuts.push(i);
+  if(!cuts.length)h='Sin cortes, toda la placa es un solo tramo: abierta y cerrada se activan juntas (ERR. IPR en el mSafe).';
+  else if(!okC&&la.length){const top=Math.min(...la);h='Cerrada: el LED más alto es el n° '+top+'. Pasá a OFF su DIP (corte debajo) y el DIP 1 del grupo siguiente.';}
+  else if(!okO&&lb.length){const bot=Math.max(...lb);h='Abierta: el LED más bajo es el n° '+bot+'. Pasá a OFF el DIP del n° '+(bot-1)+' (corte encima) y el DIP 1 de un grupo intermedio.';}
+  else if(okC&&okO)h='Calibración correcta: cerrada en n° '+la[0]+' y abierta en n° '+lb[0]+'.';
+  $('#calHint').textContent=h;
+}
+function renderLog(){logDirty=false;$('#log').innerHTML=logs.map(l=>'<div class="'+(l.k==='alarm'?'alarm':l.k==='warn'?'warn':'')+'"><span class="t">'+mmss(l.t)+'</span>'+l.m+'</div>').join('');}
+
+// ---------- canvas ----------
+let CV={};
+function readColors(){const cs=getComputedStyle(document.documentElement);['--teal-l','--yellow','--oil','--blue','--muted','--line','--text','--panel2','--red'].forEach(k=>CV[k]=cs.getPropertyValue(k).trim());}
+function prep(c){const r=c.getBoundingClientRect(),d=window.devicePixelRatio||1,h=+c.getAttribute('height');if(c.width!==Math.round(r.width*d)){c.width=Math.round(r.width*d);c.height=Math.round(h*d);}const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,r.width,h);return{x,w:r.width,h};}
+function drawTrend(){
+  const {x:g,w,h}=prep($('#cT'));const L=36,R=44,T=8,B=20,W=w-L-R,H=h-T-B;
+  const t1=st.t,t0=t1-60;const pmax=Math.max(3000,S.PL*1.1);
+  g.strokeStyle=CV['--line'];g.lineWidth=1;g.font='11px Barlow';g.fillStyle=CV['--muted'];
+  for(let i=0;i<=4;i++){const y=T+H*i/4;g.beginPath();g.moveTo(L,y);g.lineTo(L+W,y);g.stroke();g.fillText((100-25*i)+'%',2,y+4);g.fillText(fmt(pmax*(1-i/4)),L+W+4,y+4);}
+  g.fillText('−60 s',L,h-4);g.fillText('ahora',L+W-28,h-4);
+  const X=t=>L+(t-t0)/60*W;
+  const line=(key,col,sc,dash)=>{g.strokeStyle=col;g.lineWidth=2;g.setLineDash(dash||[]);g.beginPath();let pen=false;for(const s of buf){if(s.t<t0)continue;const v=s[key];if(v==null){pen=false;continue;}const y=T+H*(1-v/sc);if(!pen){g.moveTo(X(s.t),y);pen=true;}else g.lineTo(X(s.t),y);}g.stroke();g.setLineDash([]);};
+  line('PL',CV['--blue'],pmax);line('Pa',CV['--oil'],pmax);line('xr',CV['--teal-l'],100,[5,4]);line('xs',CV['--yellow'],100);
+}
+function drawFirma(){
+  const {x:g,w,h}=prep($('#cF'));const L=40,R=10,T=8,B=20,W=w-L-R,H=h-T-B;const pr=pressures();const pmax=Math.max(300,pr.crack*1.6,pr.full*1.8,pr.hold*1.8);
+  g.strokeStyle=CV['--line'];g.font='11px Barlow';g.fillStyle=CV['--muted'];
+  for(let i=0;i<=4;i++){const y=T+H*i/4;g.beginPath();g.moveTo(L,y);g.lineTo(L+W,y);g.stroke();g.fillText(fmt(pmax*(1-i/4)),2,y+4);}
+  g.fillText('0 % cerrada',L,h-4);g.fillText('100 % abierta',L+W-70,h-4);
+  const hl=(p,lab,col)=>{const y=T+H*(1-p/pmax);g.strokeStyle=col;g.setLineDash([3,4]);g.beginPath();g.moveTo(L,y);g.lineTo(L+W,y);g.stroke();g.setLineDash([]);g.fillStyle=col;g.fillText(lab,L+4,y-3);};
+  if(S.pOn<pmax)hl(S.pOn,'PUMP ON',CV['--muted']);hl(pr.hold,'HOLD',CV['--red']);
+  const pl=(arr,col)=>{if(arr.length<2)return;g.strokeStyle=col;g.lineWidth=2;g.beginPath();arr.forEach((p,i)=>{const X=L+W*p[0]/100,Y=T+H*(1-Math.min(p[1],pmax)/pmax);i?g.lineTo(X,Y):g.moveTo(X,Y);});g.stroke();};
+  pl(firmaPrev,CV['--muted']);pl(firma,CV['--yellow']);
+}
+
+// ---------- controles ----------
+function bindRange(id,key,after){
+  const r=$('#'+id),n=$('#'+id+'N');
+  const set=v=>{v=+v;if(isNaN(v))return;S[key]=v;r.value=v;n.value=v;dirty=true;after&&after();};
+  r.addEventListener('input',()=>set(r.value));n.addEventListener('change',()=>set(n.value));
+  return()=>{r.value=S[key];n.value=Math.round(S[key]*10)/10;};
+}
+const syncs=[];
+function setupControls(){
+  syncs.push(bindRange('pc','PC'));
+  syncs.push(bindRange('pl','PL',()=>{S.plRamp=0;}));
+  syncs.push(bindRange('poff','pOff'));syncs.push(bindRange('pon','pOn'));syncs.push(bindRange('qp','qPump'));syncs.push(bindRange('tl','tubeL'));
+  const mx=$('#manx'),mxN=$('#manxN');
+  const setM=v=>{S.manX=clamp(+v,0,100)/100;mx.value=Math.round(S.manX*100);mxN.value=Math.round(S.manX*100);};
+  mx.oninput=()=>setM(mx.value);mxN.onchange=()=>setM(mxN.value);
+  syncs.push(()=>{mx.value=Math.round(S.manX*100);mxN.value=Math.round(S.manX*100);});
+  const g=$('#gap'),gN=$('#gapN');const setG=v=>{S.vpx.gap=clamp(+v,0.5,6);g.value=S.vpx.gap;gN.value=S.vpx.gap;};
+  g.oninput=()=>setG(g.value);gN.onchange=()=>setG(gN.value);
+  syncs.push(()=>{g.value=S.vpx.gap;gN.value=S.vpx.gap;});
+  $('#plLo').onchange=e=>{S.plLo=+e.target.value;};$('#plHi').onchange=e=>{S.plHi=+e.target.value;};
+  syncs.push(()=>{$('#plLo').value=S.plLo;$('#plHi').value=S.plHi;$('#trig').checked=S.trig;$('#quick').checked=S.quick;$('#manual').checked=S.manual;$('#hasvpx').checked=S.hasVPX;$('#inv').checked=S.vpx.invert;$('#vpow').checked=S.vpx.power;$('#nomag4').checked=S.vpx.noMag4;$('#ovrMin').value=S.ovrMin;
+    document.querySelectorAll('[data-f]').forEach(c=>c.checked=S.f[c.dataset.f]);
+    document.querySelectorAll('#vmode button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===S.inType));});
+  $('#trig').onchange=e=>S.trig=e.target.checked;
+  $('#quick').onchange=e=>{S.quick=e.target.checked;dirty=true;};
+  $('#manual').onchange=e=>{S.manual=e.target.checked;if(S.manual){S.manX=st.x;syncAll();log('Posicionamiento manual activado','info');}};
+  $('#hasvpx').onchange=e=>{S.hasVPX=e.target.checked;log(S.hasVPX?'VPX conectado: posición confirmada':'VPX retirado: el mSafe infiere la posición por lógica hidráulica','warn');};
+  $('#inv').onchange=e=>S.vpx.invert=e.target.checked;
+  $('#vpow').onchange=e=>{S.vpx.power=e.target.checked;};
+  $('#nomag4').onchange=e=>S.vpx.noMag4=e.target.checked;
+  $('#ovrMin').onchange=e=>S.ovrMin=clamp(+e.target.value,1,60);
+  document.querySelectorAll('[data-f]').forEach(c=>c.onchange=()=>{const k=c.dataset.f;S.f[k]=c.checked;dirty=true;if(k==='decoupled'&&c.checked)st.gx=st.x;log((c.checked?'Falla activada: ':'Falla corregida: ')+c.parentElement.textContent.trim(),c.checked?'warn':'info');});
+  document.querySelectorAll('#vmode button').forEach(b=>b.onclick=()=>{S.inType=b.dataset.m;S.vpx.sw14=S.inType==='analog';S.vpx.sw23=!S.vpx.sw14;syncAll();log('VPX en modo '+(S.inType==='analog'?'analógico':'digital'),'info');});
+  document.querySelectorAll('#speed button').forEach(b=>b.onclick=()=>{S.speed=+b.dataset.s;document.querySelectorAll('#speed button').forEach(x=>x.setAttribute('aria-pressed',x===b));});
+  $('#pause').onclick=()=>{S.paused=!S.paused;$('#pause').textContent=S.paused?'Continuar':'Pausar';};
+  $('#reset').onclick=()=>{const sp=S.speed;init();S.speed=sp;syncAll();renderSlow();};
+  $('#theme').onclick=()=>{const r=document.documentElement;const d=r.dataset.theme==='dark';r.dataset.theme=d?'light':'dark';$('#theme').textContent=d?'Modo oscuro':'Modo claro';readColors();};
+  $('#kp').onclick=()=>ms.screen=(ms.screen+2)%3;$('#kn').onclick=()=>ms.screen=(ms.screen+1)%3;
+  $('#bOpen').onclick=()=>cmdOpen(false);
+  $('#bClose').onclick=()=>cmdClose('OP. LOCAL',false,'Comando CERRAR (operación local)');
+  $('#bPst').onclick=()=>pstStart(false);$('#bCal').onclick=()=>pstStart(true);
+  $('#bNorm').onclick=normalize;
+  $('#bOvr').onclick=()=>{if(!(S.trig&&S.PL<S.plLo))msg('La PL está en rango: el override no hace falta, se abre normal.');cmdOpen(true);};
+  $('#esd').onclick=()=>{ms.esd=!ms.esd;$('#esd').setAttribute('aria-pressed',ms.esd);if(ms.esd)cmdClose('BOTÓN ESD',true,'Parada de emergencia: despresurización total');else log('Pulsador de emergencia restablecido: falta normalizar','info');};
+  $('#plate').onclick=()=>{S.vpx.plate=!S.vpx.plate;renderSlow();};
+  $('#sw14').onclick=()=>{S.vpx.sw14=!S.vpx.sw14;renderSlow();};
+  $('#sw23').onclick=()=>{S.vpx.sw23=!S.vpx.sw23;renderSlow();};
+  board.addEventListener('click',e=>{
+    const d=e.target.closest('.dip'),r=e.target.closest('.reed');
+    if(d){if(S.vpx.plate){msg('Quitá la placa protectora para acceder a los DIP switches.');return;}const i=+d.dataset.i;S.vpx.dips[i]=!S.vpx.dips[i];log('DIP del reed n° '+i+' en '+(S.vpx.dips[i]?'ON':'OFF'),'info');renderSlow();}
+    if(r){const i=+r.dataset.r;S.vpx.reeds[i]=(S.vpx.reeds[i]+1)%3;const n=['normal','abierto (punto negro)','pegado'][S.vpx.reeds[i]];log('Reed n° '+i+': '+n,S.vpx.reeds[i]?'warn':'info');renderSlow();}
+  });
+  $('#dipFab').onclick=()=>{S.vpx.dips=Array(33).fill(true);log('DIPs del VPX en ON (de fábrica, sin calibrar)','warn');renderSlow();};
+  $('#dipEx').onclick=()=>{S.vpx.dips=Array(33).fill(true);[3,9,17,29].forEach(i=>S.vpx.dips[i]=false);log('DIPs según el ejemplo del manual (n° 3, 9, 17 y 29 en OFF)','info');renderSlow();};
+  document.querySelectorAll('[data-sc]').forEach(b=>b.onclick=()=>scenario(b.dataset.sc));
+}
+function syncAll(){syncs.forEach(f=>f());}
+function setOpen(){st.x=1;st.gx=1;st.Pa=S.pOff;st.sol=true;st.pump=false;ms.cmd='open';ms.cmdT=st.t;ms.wasOpen=true;ms.inhib=false;ms.opening=false;}
+function scenario(k){
+  S.plRamp=0;
+  if(k==='low'){Object.assign(S,{PC:350,PL:180,plLo:100,plHi:600});log('Escenario: pozo de baja presión. Mirá cómo cierra casi solo con el resorte.','info');}
+  if(k==='high'){Object.assign(S,{PC:5000,PL:4800,plLo:1000,plHi:5500});log('Escenario: gas a 4800 psi. La PL sobre el vástago acelera el cierre.','info');}
+  if(k==='start'){Object.assign(S,{PC:2500,PL:80,plLo:200,plHi:1500});log('Escenario: puesta en marcha. La apertura normal se rechaza; usá override y subí la PL antes de que termine.','info');}
+  if(k==='ramp'){Object.assign(S,{PC:1500,PL:800,plLo:200,plHi:1200});setOpen();S.plRamp=25;log('Escenario: la PL sube 25 psi/s hasta disparar el trigger alto.','info');}
+  if(k==='factory'){S.vpx.dips=Array(33).fill(true);S.inType='digital';S.vpx.sw14=false;S.vpx.sw23=true;log('Escenario: VPX de fábrica. Abierta y cerrada se activan juntas hasta calibrar.','warn');}
+  dirty=true;syncAll();renderSlow();
+}
+
+// ---------- arranque ----------
+init();buildSvg();buildBoard();setupControls();syncAll();readColors();renderSlow();
+window.addEventListener('resize',()=>{});
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
